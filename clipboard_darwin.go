@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build darwin
 // +build darwin
 
 package clipboard
@@ -21,6 +22,16 @@ func getPasteCommand() *exec.Cmd {
 
 func getCopyCommand() *exec.Cmd {
 	return exec.Command(copyCmdArgs)
+}
+
+func readFilePaths() (ret []string, err error) {
+	ret = []string{}
+	data, err := readAll()
+	if nil != err {
+		return err
+	}
+	ret = append(ret, data)
+	return
 }
 
 func readAll() (string, error) {

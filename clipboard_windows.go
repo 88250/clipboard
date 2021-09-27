@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 package clipboard
@@ -15,6 +16,7 @@ import (
 
 const (
 	cfUnicodetext = 13
+	cfHDROP       = 15
 	gmemMoveable  = 0x0002
 )
 
@@ -25,6 +27,7 @@ var (
 	closeClipboard             = user32.MustFindProc("CloseClipboard")
 	emptyClipboard             = user32.MustFindProc("EmptyClipboard")
 	getClipboardData           = user32.MustFindProc("GetClipboardData")
+	dragQueryFile              = user32.MustFindProc("DragQueryFileW")
 	setClipboardData           = user32.MustFindProc("SetClipboardData")
 
 	kernel32     = syscall.NewLazyDLL("kernel32")
@@ -49,6 +52,65 @@ func waitOpenClipboard() error {
 		time.Sleep(time.Millisecond)
 	}
 	return err
+}
+
+func readFilePaths() (ret []string, err error) {
+	ret = []string{}
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	if formatAvailable, _, err0 := isClipboardFormatAvailable.Call(cfUnicodetext); formatAvailable == 0 {
+		err = err0
+		return
+	}
+	err = waitOpenClipboard()
+	if err != nil {
+		return
+	}
+
+	h, _, err := getClipboardData.Call(cfHDROP)
+	if h == 0 {
+		_, _, _ = closeClipboard.Call()
+		return
+	}
+
+	l, _, err := globalLock.Call(h)
+	if l == 0 {
+		_, _, _ = closeClipboard.Call()
+		return
+	}
+
+	count := dragQueryFile0(h, 0xFFFFFFFF, nil, 0)
+	for i := uint(0); i < count; i++ {
+		pLen := dragQueryFile0(h, i, nil, 0)
+		buf := make([]uint16, pLen+1)
+		dragQueryFile0(h, i, &buf[0], pLen+1)
+		p := syscall.UTF16ToString((*[1 << 20]uint16)(unsafe.Pointer(&buf[0]))[:])
+		ret = append(ret, p)
+	}
+
+	r, _, err := globalUnlock.Call(h)
+	if r == 0 {
+		_, _, _ = closeClipboard.Call()
+		return
+	}
+
+	closed, _, err := closeClipboard.Call()
+	if closed == 0 {
+		return
+	}
+	return
+}
+
+func dragQueryFile0(hDrop uintptr, iFile uint, lpszFile *uint16, cch uint) uint {
+	ret, _, _ := syscall.Syscall6(dragQueryFile.Addr(), 4,
+		uintptr(hDrop),
+		uintptr(iFile),
+		uintptr(unsafe.Pointer(lpszFile)),
+		uintptr(cch),
+		0,
+		0)
+	return uint(ret)
 }
 
 func readAll() (string, error) {

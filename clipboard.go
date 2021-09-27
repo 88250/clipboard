@@ -10,6 +10,11 @@ func ReadAll() (string, error) {
 	return readAll()
 }
 
+// ReadFilePaths read file path from clipboard
+func ReadFilePaths() (ret []string, err error) {
+	return readFilePaths()
+}
+
 // WriteAll write string to clipboard
 func WriteAll(text string) error {
 	return writeAll(text)
