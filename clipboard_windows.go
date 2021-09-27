@@ -27,7 +27,6 @@ var (
 	closeClipboard             = user32.MustFindProc("CloseClipboard")
 	emptyClipboard             = user32.MustFindProc("EmptyClipboard")
 	getClipboardData           = user32.MustFindProc("GetClipboardData")
-	dragQueryFile              = user32.MustFindProc("DragQueryFileW")
 	setClipboardData           = user32.MustFindProc("SetClipboardData")
 
 	kernel32     = syscall.NewLazyDLL("kernel32")
@@ -36,6 +35,9 @@ var (
 	globalLock   = kernel32.NewProc("GlobalLock")
 	globalUnlock = kernel32.NewProc("GlobalUnlock")
 	lstrcpy      = kernel32.NewProc("lstrcpyW")
+
+	libshell32    = syscall.NewLazyDLL("shell32.dll")
+	dragQueryFile = libshell32.NewProc("DragQueryFileW")
 )
 
 // waitOpenClipboard opens the clipboard, waiting for up to a second to do so.
@@ -59,7 +61,7 @@ func readFilePaths() (ret []string, err error) {
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
-	if formatAvailable, _, err0 := isClipboardFormatAvailable.Call(cfUnicodetext); formatAvailable == 0 {
+	if formatAvailable, _, err0 := isClipboardFormatAvailable.Call(cfHDROP); formatAvailable == 0 {
 		err = err0
 		return
 	}
