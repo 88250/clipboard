@@ -28,7 +28,7 @@ func readFilePaths() (ret []string, err error) {
 	ret = []string{}
 	data, err := readAll()
 	if nil != err {
-		return err
+		return
 	}
 	ret = append(ret, data)
 	return

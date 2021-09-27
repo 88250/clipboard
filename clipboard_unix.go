@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build freebsd || linux || netbsd || openbsd || solaris || dragonfly
 // +build freebsd linux netbsd openbsd solaris dragonfly
 
 package clipboard
@@ -108,6 +109,16 @@ func getCopyCommand() *exec.Cmd {
 		copyCmdArgs = copyCmdArgs[:1]
 	}
 	return exec.Command(copyCmdArgs[0], copyCmdArgs[1:]...)
+}
+
+func readFilePaths() (ret []string, err error) {
+	ret = []string{}
+	data, err := readAll()
+	if nil != err {
+		return
+	}
+	ret = append(ret, data)
+	return
 }
 
 func readAll() (string, error) {

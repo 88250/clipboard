@@ -40,22 +40,6 @@ var (
 	dragQueryFile = libshell32.NewProc("DragQueryFileW")
 )
 
-// waitOpenClipboard opens the clipboard, waiting for up to a second to do so.
-func waitOpenClipboard() error {
-	started := time.Now()
-	limit := started.Add(time.Second)
-	var r uintptr
-	var err error
-	for time.Now().Before(limit) {
-		r, _, err = openClipboard.Call(0)
-		if r != 0 {
-			return nil
-		}
-		time.Sleep(time.Millisecond)
-	}
-	return err
-}
-
 func readFilePaths() (ret []string, err error) {
 	ret = []string{}
 
@@ -218,4 +202,20 @@ func writeAll(text string) error {
 		return err
 	}
 	return nil
+}
+
+// waitOpenClipboard opens the clipboard, waiting for up to a second to do so.
+func waitOpenClipboard() error {
+	started := time.Now()
+	limit := started.Add(time.Second)
+	var r uintptr
+	var err error
+	for time.Now().Before(limit) {
+		r, _, err = openClipboard.Call(0)
+		if r != 0 {
+			return nil
+		}
+		time.Sleep(time.Millisecond)
+	}
+	return err
 }
