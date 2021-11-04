@@ -11,6 +11,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 const (
@@ -117,7 +118,15 @@ func readFilePaths() (ret []string, err error) {
 	if nil != err {
 		return
 	}
-	ret = append(ret, data)
+	lines := strings.Split(data, "\n")
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if "" == l {
+			continue
+		}
+		l = strings.TrimPrefix(l, "file://")
+		ret = append(ret, l)
+	}
 	return
 }
 
